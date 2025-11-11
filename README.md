@@ -24,37 +24,58 @@ LD_LIBRARY_PATH=../tyco-c/build:$LD_LIBRARY_PATH make test
 
 ## Quick Start
 
-This package includes a ready-to-use example Tyco file at:
-
-   example.tyco
-
-([View on GitHub](https://github.com/typedconfig/tyco-perl/blob/main/example.tyco))
-
-You can load and parse this file using the Perl Tyco API. Example usage:
+Every binding ships the canonical sample configuration under `tyco/example.tyco`
+([view on GitHub](https://github.com/typedconfig/tyco-perl/blob/main/tyco/example.tyco)).
+Load it to mirror the Python README example:
 
 ```perl
 use lib 'lib';
 use Tyco;
 
-# Parse the bundled example.tyco file
-my $context = Tyco::load_file('example.tyco');
+my $config = Tyco::load_file('tyco/example.tyco');
 
-# Access global configuration values
-my $globals = $context->{globals};
-my $environment = $globals->{environment};
-my $debug = $globals->{debug};
-my $timeout = $globals->{timeout};
+my $environment = $config->{environment};
+my $debug       = $config->{debug};
+my $timeout     = $config->{timeout};
 print "env=$environment debug=$debug timeout=$timeout\n";
-# ... access objects, etc ...
+
+my $primary_db = $config->{Database}[0];
+printf "primary database -> %s:%d\n", $primary_db->{host}, $primary_db->{port};
 ```
 
-See the [example.tyco](https://github.com/typedconfig/tyco-perl/blob/main/example.tyco) file for the full configuration example.
-my $objects = $context->{objects};
-my $databases = $objects->{Database}; # Arrayref of Database instances
-my $servers = $objects->{Server};     # Arrayref of Server instances
+### Example Tyco File
 
-# Access individual instance fields
-my $primary_db = $databases->[0];
-my $db_host = $primary_db->{host};
-my $db_port = $primary_db->{port};
+```
+tyco/example.tyco
+```
+
+```tyco
+# Global configuration with type annotations
+str environment: production
+bool debug: false
+int timeout: 30
+
+# Database configuration struct
+Database:
+ *str name:           # Primary key field (*)
+  str host:
+  int port:
+  str connection_string:
+  # Instances
+  - primary, localhost,    5432, "postgresql://localhost:5432/myapp"
+  - replica, replica-host, 5432, "postgresql://replica-host:5432/myapp"
+
+# Server configuration struct  
+Server:
+ *str name:           # Primary key for referencing
+  int port:
+  str host:
+  ?str description:   # Nullable field (?) - can be null
+  # Server instances
+  - web1,    8080, web1.example.com,    description: "Primary web server"
+  - api1,    3000, api1.example.com,    description: null
+  - worker1, 9000, worker1.example.com, description: "Worker number 1"
+
+# Feature flags array
+str[] features: [auth, analytics, caching]
 ```
