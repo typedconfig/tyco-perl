@@ -22,22 +22,33 @@ make
 LD_LIBRARY_PATH=../tyco-c/build:$LD_LIBRARY_PATH make test
 ```
 
-### Usage
+## Quick Start
+
+This package includes a ready-to-use example Tyco file at:
+
+   example.tyco
+
+([View on GitHub](https://github.com/typedconfig/tyco-perl/blob/main/example.tyco))
+
+You can load and parse this file using the Perl Tyco API. Example usage:
 
 ```perl
 use lib 'lib';
 use Tyco;
 
-# Parse a Tyco configuration file
-my $context = Tyco::load_file('config.tyco');
+# Parse the bundled example.tyco file
+my $context = Tyco::load_file('example.tyco');
 
 # Access global configuration values
 my $globals = $context->{globals};
 my $environment = $globals->{environment};
 my $debug = $globals->{debug};
 my $timeout = $globals->{timeout};
+print "env=$environment debug=$debug timeout=$timeout\n";
+# ... access objects, etc ...
+```
 
-# Get all instances as hashes
+See the [example.tyco](https://github.com/typedconfig/tyco-perl/blob/main/example.tyco) file for the full configuration example.
 my $objects = $context->{objects};
 my $databases = $objects->{Database}; # Arrayref of Database instances
 my $servers = $objects->{Server};     # Arrayref of Server instances
