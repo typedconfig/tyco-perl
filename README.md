@@ -34,13 +34,14 @@ use Tyco;
 
 my $config = Tyco::load_file('tyco/example.tyco');
 
-my $environment = $config->{environment};
-my $debug       = $config->{debug};
-my $timeout     = $config->{timeout};
-print "env=$environment debug=$debug timeout=$timeout\n";
+my $timezone = $config->{timezone};
+print "timezone=$timezone\n";
 
-my $primary_db = $config->{Database}[0];
-printf "primary database -> %s:%d\n", $primary_db->{host}, $primary_db->{port};
+my $primary_app = $config->{Application}[0];
+printf "primary service -> %s (%s)\n", $primary_app->{service}, $primary_app->{command};
+
+my $backup_host = $config->{Host}[1];
+printf "host %s cores=%d\n", $backup_host->{hostname}, $backup_host->{cores};
 ```
 
 ### Example Tyco File
@@ -50,32 +51,29 @@ tyco/example.tyco
 ```
 
 ```tyco
-# Global configuration with type annotations
-str environment: production
-bool debug: false
-int timeout: 30
+str timezone: UTC  # this is a global config setting
 
-# Database configuration struct
-Database:
- *str name:           # Primary key field (*)
-  str host:
-  int port:
-  str connection_string:
-  # Instances
-  - primary, localhost,    5432, "postgresql://localhost:5432/myapp"
-  - replica, replica-host, 5432, "postgresql://replica-host:5432/myapp"
+Application:       # schema defined first, followed by instance creation
+  str service:
+  str profile:
+  str command: start_app {service}.{profile} -p {port.number}
+  Host host:
+  Port port: Port(http_web)  # reference to Port instance defined below
+  - service: webserver, profile: primary, host: Host(prod-01-us)
+  - service: webserver, profile: backup,  host: Host(prod-02-us)
+  - service: database,  profile: mysql,   host: Host(prod-02-us), port: Port(http_mysql)
 
-# Server configuration struct  
-Server:
- *str name:           # Primary key for referencing
-  int port:
-  str host:
-  ?str description:   # Nullable field (?) - can be null
-  # Server instances
-  - web1,    8080, web1.example.com,    description: "Primary web server"
-  - api1,    3000, api1.example.com,    description: null
-  - worker1, 9000, worker1.example.com, description: "Worker number 1"
+Host:
+ *str hostname:  # star character (*) used as reference primary key
+  int cores:
+  bool hyperthreaded: true
+  str os: Debian
+  - prod-01-us, cores: 64, hyperthreaded: false
+  - prod-02-us, cores: 32, os: Fedora
 
-# Feature flags array
-str[] features: [auth, analytics, caching]
+Port:
+ *str name:
+  int number:
+  - http_web,   80  # can skip field keys when obvious
+  - http_mysql, 3306
 ```
